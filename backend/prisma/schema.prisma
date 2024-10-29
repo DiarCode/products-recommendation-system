@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String
+  subCategoryId   String         @db.ObjectId
+  characteristics Json           @default("{}")
+  brandId         String         @db.ObjectId
+  brandCategoryId String         @db.ObjectId
+  images          String[]       @default([])
+  articul         String         @unique
+  barcode         String?        @unique
+  price           Float
+  stock           Int
+  status          ProductsStatus @default(ACTIVE)
+  ratingValue     Float          @default(5)
+  ratingCount     Int            @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand         Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brandCategory BrandCategory   @relation(fields: [brandCategoryId], references: [id], onDelete: Cascade)
+  subCategory   SubCategory     @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  ratings       ProductRating[]
+
+  @@index([name])
+  @@map("products")
+}
+
+model ProductRating {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  userId    String   @db.ObjectId
+  rating    Int      @default(0)
+  comment   String?
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("productRatings")
+}
+
+enum ProductsStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model Brand {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique
+  description String?
+  url         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products        Product[]
+  brandCategories BrandCategory[]
+  @@map("brands")
+}
+
+model BrandCategory {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  name    String 
+  brandId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([name, brandId]) 
+  @@map("brandCategories")
+}
+
+model Category {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  name String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subCategories SubCategory[]
+  
+  @@map("categories")
+}
+
+model SubCategory {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  categoryId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([name, categoryId]) 
+  @@map("subCategories")
+}
+
+enum UserType {
+  INDIVIDUAL
+  LEGAL_ENTITY
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  firstName String
+  lastName  String
+  phone     String @unique
+  password  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses      Address[]
+  role           Role            @default(USER)
+  orders         Order[]
+  productRatings ProductRating[]
+
+  @@map("users")
+}
+
+model Address {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  address String
+  city    String
+  country String
+  userId  String @db.ObjectId
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELED
+}
+
+model Order {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderItemsId String[]
+  totalPrice   Float
+  status       OrderStatus
+  address      Json
+  userId       String      @db.ObjectId
+  isPaid       Boolean
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderItems OrderItem[]
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  productId String @db.ObjectId
+  quantity  Int
+  price     Float
+  orderId   String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("orderItems")
+}
+
+model StoreConfig {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  storeName        String?
+  storeDescription String?
+  storeKeywords    String?
+  landingImages    String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("storeConfigs")
+}
