@@ -59,6 +59,12 @@ export class ProductController {
 		return this.productService.getHistoryProductsByUser(userId)
 	}
 
+	@Get('my-recommendations')
+	@Auth()
+	async getMyRecommendedProducts(@CurrentUser('id') userId: string) {
+		return this.productService.getRecommendedProductsByUser(userId)
+	}
+
 	@Get('by-ids')
 	async getProductByIds(@Query('ids') productIds: string) {
 		return this.productService.getProductByIds(productIds)

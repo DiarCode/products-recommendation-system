@@ -324,4 +324,84 @@ export class ProductService {
 			}
 		})
 	}
+
+	async getRecommendedProductsByUser(userId: string) {
+		// get viewed products by the user
+		const viewedProducts = await this.prisma.visitedProduct.findMany({
+			where: { userId },
+			select: { productId: true },
+		});
+
+		// If the user has no view history => return top-rated products
+		if (viewedProducts.length === 0) {
+			const topRatedProducts = await this.prisma.product.findMany({
+				orderBy: { ratingValue: 'desc' },
+				take: 10,
+			});
+			return topRatedProducts;
+		}
+
+		// get user's orders
+		const orders = await this.prisma.order.findMany({
+			where: { userId: userId },
+			select: { orderItemsId: true },
+			take: 10,
+		});
+
+		const orderItemsIds = orders.flatMap(item => item.orderItemsId);
+
+		let orderedProducts = [];
+		if (orderItemsIds.length > 0) {
+			orderedProducts = await this.prisma.orderItem.findMany({
+				where: { id: { in: orderItemsIds } },
+				select: { productId: true },
+			});
+		}
+
+		const viewedProductIds = viewedProducts.map(item => item.productId);
+		const orderedProductIds = orderedProducts.map(item => item.productId);
+		const excludeProductIds = [...viewedProductIds, ...orderedProductIds];
+
+		const viewedDetails = await this.prisma.product.findMany({
+			where: { id: { in: viewedProductIds } },
+			select: { subCategoryId: true, brandId: true },
+		});
+
+		const subCategories = Array.from(new Set(viewedDetails.map(item => item.subCategoryId)));
+		const brands = Array.from(new Set(viewedDetails.map(item => item.brandId)));
+
+		const orderedProductDetails = await this.prisma.product.findMany({
+			where: { id: { in: orderedProductIds } },
+			select: { price: true },
+		});
+
+		// Calculate the average price if the user has made orders
+		const averagePrice = orderedProductDetails.length > 0
+			? orderedProductDetails.reduce((sum, product) => sum + product.price, 0) / orderedProductDetails.length
+			: 0;
+
+		// Fetch products with filtering based on subcategories and brands
+		const products = await this.prisma.product.findMany({
+			where: {
+				subCategoryId: { in: subCategories },
+				brandId: { in: brands },
+				id: { notIn: excludeProductIds },
+			},
+			orderBy: { ratingValue: 'desc' },
+			take: 30,
+		});
+
+		// sorting by price difference
+		const sortedProducts = products
+			.map(product => ({
+				...product,
+				priceDifference: Math.abs(product.price - averagePrice),
+			}))
+			.sort((a, b) => {
+				return a.priceDifference - b.priceDifference;
+			})
+			.slice(0, 10);
+
+		return sortedProducts;
+	}
 }
