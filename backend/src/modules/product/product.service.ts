@@ -328,7 +328,7 @@ export class ProductService {
 	async getRecommendedProductsByUser(userId: string) {
 		// get viewed products by the user
 		const viewedProducts = await this.prisma.visitedProduct.findMany({
-			where: { userId },
+			where: { userId: userId },
 			select: { productId: true },
 		});
 
@@ -344,16 +344,17 @@ export class ProductService {
 		// get user's orders
 		const orders = await this.prisma.order.findMany({
 			where: { userId: userId },
-			select: { orderItemsId: true },
+			select: { id: true },
 			take: 10,
 		});
 
-		const orderItemsIds = orders.flatMap(item => item.orderItemsId);
+
+		const ordersIds = orders.flatMap(order => order.id);
 
 		let orderedProducts = [];
-		if (orderItemsIds.length > 0) {
+		if (ordersIds.length > 0) {
 			orderedProducts = await this.prisma.orderItem.findMany({
-				where: { id: { in: orderItemsIds } },
+				where: { orderId: { in: ordersIds } },
 				select: { productId: true },
 			});
 		}
@@ -375,12 +376,35 @@ export class ProductService {
 			select: { price: true },
 		});
 
-		// Calculate the average price if the user has made orders
-		const averagePrice = orderedProductDetails.length > 0
-			? orderedProductDetails.reduce((sum, product) => sum + product.price, 0) / orderedProductDetails.length
-			: 0;
+		if (orderedProductDetails.length > 0) {
+			// Calculate the average price if the user has made orders
+			const totalSpent = orderedProductDetails.reduce((sum, product) => sum + product.price, 0);
+			const averagePrice = totalSpent / orderedProductDetails.length;
 
-		// Fetch products with filtering based on subcategories and brands
+			// Fetch products with filtering based on subcategories and brands
+			const products = await this.prisma.product.findMany({
+				where: {
+					subCategoryId: { in: subCategories },
+					brandId: { in: brands },
+					id: { notIn: excludeProductIds },
+				},
+				orderBy: { ratingValue: 'desc' },
+				take: 30,
+			});
+
+			// sorting by price difference
+			const sortedProducts = products
+				.map(product => ({
+					...product,
+					priceDifference: Math.abs(product.price - averagePrice),
+				}))
+				.sort((a, b) => {
+					return a.priceDifference - b.priceDifference;
+				})
+				.slice(0, 10);
+			return sortedProducts
+		}
+
 		const products = await this.prisma.product.findMany({
 			where: {
 				subCategoryId: { in: subCategories },
@@ -391,17 +415,6 @@ export class ProductService {
 			take: 30,
 		});
 
-		// sorting by price difference
-		const sortedProducts = products
-			.map(product => ({
-				...product,
-				priceDifference: Math.abs(product.price - averagePrice),
-			}))
-			.sort((a, b) => {
-				return a.priceDifference - b.priceDifference;
-			})
-			.slice(0, 10);
-
-		return sortedProducts;
+		return products;
 	}
 }
