@@ -67,12 +67,13 @@ model Brand {
 
   products        Product[]
   brandCategories BrandCategory[]
+
   @@map("brands")
 }
 
 model BrandCategory {
   id      String @id @default(auto()) @map("_id") @db.ObjectId
-  name    String 
+  name    String
   brandId String @db.ObjectId
 
   createdAt DateTime @default(now())
@@ -81,7 +82,7 @@ model BrandCategory {
   brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
   products Product[]
 
-  @@unique([name, brandId]) 
+  @@unique([name, brandId])
   @@map("brandCategories")
 }
 
@@ -93,7 +94,7 @@ model Category {
   updatedAt DateTime @updatedAt
 
   subCategories SubCategory[]
-  
+
   @@map("categories")
 }
 
@@ -108,7 +109,7 @@ model SubCategory {
   category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   products Product[]
 
-  @@unique([name, categoryId]) 
+  @@unique([name, categoryId])
   @@map("subCategories")
 }
 
@@ -133,9 +134,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   addresses      Address[]
-  role           Role            @default(USER)
+  role           Role             @default(USER)
   orders         Order[]
   productRatings ProductRating[]
+  SearchTerm     SearchTerm[]
+  VisitedProduct VisitedProduct[]
 
   @@map("users")
 }
@@ -206,5 +209,28 @@ model StoreConfig {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
   @@map("storeConfigs")
+}
+
+model SearchTerm {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  term      String
+  createdAt DateTime @default(now())
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("searchTerms")
+}
+
+model VisitedProduct {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  createdAt DateTime @default(now())
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("visitedProducts")
 }

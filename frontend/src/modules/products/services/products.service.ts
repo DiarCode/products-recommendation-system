@@ -99,6 +99,20 @@ class ProductsService {
 			return [] as Products[]
 		}
 	}
+
+	async saveVisitedProduct(productId: string) {
+		return await fetchWrapper.post<void>(
+			`${this.url}/visited-products/${productId}`
+		)
+	}
+
+	async saveSearchTerms(searchTerm: string) {
+		return await fetchWrapper.post<void>(
+			`${this.url}/search-term`,
+			{},
+			{ params: { term: searchTerm } }
+		)
+	}
 }
 
 export const productsService = new ProductsService()

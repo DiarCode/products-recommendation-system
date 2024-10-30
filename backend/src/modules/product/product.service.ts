@@ -217,7 +217,7 @@ export class ProductService {
 	}
 
 	async getProductById(id: string) {
-		const product = await this.prisma.product.findUnique({
+		const product = await this.prisma.product.findFirst({
 			where: { id, status: { not: ProductsStatus.ARCHIVED } },
 			include: {
 				subCategory: true,
@@ -273,5 +273,55 @@ export class ProductService {
 		})
 
 		return products.map(item => item.product)
+	}
+
+	async addSearchTerm(userId: string, term: string): Promise<void> {
+		await this.prisma.$transaction(async prisma => {
+			await prisma.searchTerm.create({
+				data: {
+					term,
+					userId,
+				},
+			})
+
+			const excessSearchTerms = await prisma.searchTerm.findMany({
+				where: { userId },
+				orderBy: { createdAt: 'desc' },
+				skip: 10,
+				select: { id: true },
+			})
+
+			if (excessSearchTerms.length > 0) {
+				const idsToDelete = excessSearchTerms.map(term => term.id)
+				await prisma.searchTerm.deleteMany({
+					where: { id: { in: idsToDelete } },
+				})
+			}
+		})
+	}
+
+	async addVisitedProduct(userId: string, productId: string): Promise<void> {
+		await this.prisma.$transaction(async prisma => {
+			await prisma.visitedProduct.create({
+				data: {
+					productId,
+					userId,
+				},
+			})
+
+			const excessVisitedProducts = await prisma.visitedProduct.findMany({
+				where: { userId },
+				orderBy: { createdAt: 'desc' },
+				skip: 10,
+				select: { id: true },
+			})
+
+			if (excessVisitedProducts.length > 0) {
+				const idsToDelete = excessVisitedProducts.map(product => product.id)
+				await prisma.visitedProduct.deleteMany({
+					where: { id: { in: idsToDelete } },
+				})
+			}
+		})
 	}
 }

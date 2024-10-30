@@ -3,11 +3,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { useMutation } from '@tanstack/react-query'
 import { Heart, ShoppingBasket } from 'lucide-react'
-import { MouseEvent, memo } from 'react'
+import { MouseEvent, memo, useCallback } from 'react'
 import { toast } from 'sonner'
 
 import { Products } from '../models/products.types'
+import { productsService } from '../services/products.service'
 
 import { Button } from '@/core/components/ui/button'
 import { Skeleton } from '@/core/components/ui/skeleton'
@@ -60,6 +62,11 @@ export const ProductsListItem = memo(
 		const { addToCart, isProductInCart } = useCartStore()
 		const { addFavorite, isFavorite, removeFavorite } = useFavoritesStore()
 
+		const mutation = useMutation({
+			mutationFn: (productId: string) =>
+				productsService.saveVisitedProduct(productId)
+		})
+
 		const onCartClick = (event: MouseEvent<HTMLButtonElement>) => {
 			event.stopPropagation()
 
@@ -83,10 +90,15 @@ export const ProductsListItem = memo(
 			}
 		}
 
+		const onProductClick = useCallback(() => {
+			mutation.mutate(product.id)
+		}, [mutation, product.id])
+
 		return (
 			<div className='relative flex h-full cursor-pointer flex-col justify-between'>
 				<Link
 					href={`/products/${product.id}`}
+					onClick={onProductClick}
 					className='w-full flex-grow'
 				>
 					<div className='relative h-72 w-full overflow-hidden rounded-xl bg-muted/50'>

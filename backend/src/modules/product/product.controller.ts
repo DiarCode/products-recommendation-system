@@ -64,6 +64,19 @@ export class ProductController {
 		return this.productService.getProductByIds(productIds)
 	}
 
+	@Post('visited-products/:id')
+	@Auth()
+	async saveVisitedProduct(@Param('id') productId: string, @CurrentUser('id') userId: string) {
+		return this.productService.addVisitedProduct(userId, productId)
+	}
+
+	@Post('search-term')
+	@Auth()
+	async saveSearchTerms(@Query('term') searchTerm: string, @CurrentUser('id') userId: string) {
+		console.log('TERM', searchTerm)
+		return this.productService.addSearchTerm(userId, searchTerm)
+	}
+
 	@Get(':id')
 	async getProductById(@Param('id') productId: string) {
 		return this.productService.getProductById(productId)
