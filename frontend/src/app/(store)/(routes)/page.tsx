@@ -16,6 +16,7 @@ import { adminStoreConfigsService } from '@/modules/admin/store-config/services/
 import { QueryProductsList } from '@/modules/products/components/query-products-list'
 import { PRODUCTS_QUERY_KEY } from '@/modules/products/hooks/use-products'
 import { productsService } from '@/modules/products/services/products.service'
+import { RecommendationsList } from '@/modules/recommendations/components/recommendations-list'
 
 export const metadata: Metadata = {
 	title: 'Главная'
@@ -61,6 +62,8 @@ export default async function HomePage() {
 			</Carousel>
 
 			<QueryProductsList className='mt-8' />
+
+			<RecommendationsList />
 		</HydrationBoundary>
 	)
 }
