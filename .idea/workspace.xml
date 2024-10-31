@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0ce2423b-f454-4058-bd29-b8c25cb2563b" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" afterDir="false" />
     </list>
@@ -14,6 +15,11 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -28,10 +34,10 @@
     &quot;accountId&quot;: &quot;90f395f0-1012-4614-8d74-cf42f3a657a7&quot;
   }
 }</component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1
 }</component>
@@ -44,7 +50,7 @@
   "keyToString": {
     "Docker.backend/Dockerfile.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "recEng",
     "last_opened_file_path": "C:/Users/PK/Desktop/products-recommendation-system",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.standard": "true",
@@ -57,7 +63,7 @@
     "npm.dev.executor": "Run",
     "npm.migrate:up.executor": "Run",
     "npm.start.executor": "Run",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "settings.editor.selected.configurable": "settings.javascript.linters.eslint",
     "ts.external.directory.path": "C:\\Users\\PK\\Desktop\\products-recommendation-system\\backend\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   }
@@ -148,7 +154,10 @@
       <workItem from="1730289835377" duration="5130000" />
       <workItem from="1730299287833" duration="99000" />
       <workItem from="1730299407174" duration="1534000" />
-      <workItem from="1730300998040" duration="9955000" />
+      <workItem from="1730300998040" duration="10118000" />
+      <workItem from="1730316460544" duration="746000" />
+      <workItem from="1730371852623" duration="1530000" />
+      <workItem from="1730391351387" duration="6736000" />
     </task>
     <servers />
   </component>

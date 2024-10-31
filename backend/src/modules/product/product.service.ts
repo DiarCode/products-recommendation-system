@@ -343,7 +343,7 @@ export class ProductService {
 			// If no history, return top-rated products as fallback
 			recommendedProducts = await this.prisma.product.findMany({
 				orderBy: { ratingValue: 'desc' },
-				take: 10,
+				take: 15,
 				include: {
 					subCategory: true,
 					brand: true,
@@ -385,7 +385,7 @@ export class ProductService {
 				subCategoryId: { in: subCategories },
 				brandId: { in: brands },
 				id: { notIn: excludeProductIds },
-				price: { gte: avgPrice * 0.8, lte: avgPrice * 1.2 },
+				price: { gte: avgPrice * 0.7, lte: avgPrice * 1.3 },
 			},
 			include: {
 				subCategory: true,
@@ -403,18 +403,70 @@ export class ProductService {
 			).values(),
 		]
 
-		// Step 4: Rank Recommendations Using ML Model (Mock Scoring for Demonstration)
-		const scoredProducts = allRecommendations.map(product => ({
-			...product,
-			score: this.calculateProductScore(userId, product, avgPrice),
-		}))
+		// Step 4: Rank Recommendations Using ML Model (Mock Scoring and Cosine Similarity for Demonstration)
+		const scoredProducts = await Promise.all(
+			allRecommendations.map(async (product) => ({
+				...product,
+				score: await this.calculateProductScoreWithSimilarity(product, avgPrice, viewedProductIds),
+			}))
+		);
 
 		// Step 5: Sort Products by Score and Return Top Recommendations
-		const finalRecommendations = scoredProducts.sort((a, b) => b.score - a.score)
-		return finalRecommendations
+		const finalRecommendations = scoredProducts.sort((a, b) => b.score - a.score).slice(0, 15);
+
+		return finalRecommendations;
 	}
 
-	private calculateProductScore(userId: string, product: Product, avgPrice: number): number {
+	private calculateCosineSimilarity(productA: Product, productB: Product): number {
+		const featureVectorA = [
+			productA.price || 0,
+			productA.ratingValue || 0,
+			productA.ratingCount || 0
+		];
+
+		const featureVectorB = [
+			productB.price || 0,
+			productB.ratingValue || 0,
+			productB.ratingCount || 0
+		];
+
+		const dotProduct = featureVectorA.reduce((sum, a, index) => sum + a * featureVectorB[index], 0);
+
+		const magnitudeA = Math.sqrt(featureVectorA.reduce((sum, a) => sum + a * a, 0));
+		const magnitudeB = Math.sqrt(featureVectorB.reduce((sum, b) => sum + b * b, 0));
+
+		const cosineSimilarity = dotProduct / (magnitudeA * magnitudeB);
+
+		return cosineSimilarity;
+	}
+
+
+	// Calculate score with similarity weighting for products
+	private async calculateProductScoreWithSimilarity(
+		product: Product,
+		avgPrice: number,
+		viewedProductIds: string[]
+	): Promise<number> {
+		const baseScore = this.calculateProductScore(product, avgPrice);
+		const similarityWeight = 0.5;
+
+		// Fetch viewed products asynchronously and calculate similarity scores
+		const similarities = await Promise.all(
+			viewedProductIds.map(async (viewedProductId) => {
+				const viewedProduct = await this.prisma.product.findUnique({ where: { id: viewedProductId } });
+				if (viewedProduct) {
+					return this.calculateCosineSimilarity(product, viewedProduct);
+				}
+				return 0;
+			})
+		);
+
+		const maxSimilarity = Math.max(...similarities);
+
+		return baseScore + similarityWeight * maxSimilarity;
+	}
+
+	private calculateProductScore(product: Product, avgPrice: number): number {
 		// Simple scoring function based on similarity and product attributes
 		const priceWeight = 0.3
 		const ratingWeight = 0.4
