@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Get,
+	Inject,
 	Param,
 	Post,
 	Put,
@@ -17,10 +18,18 @@ import { CurrentUser } from '../auth/decorators/user.decorator'
 import { Roles } from '../auth/roles/roles.decorator'
 import { CreateProductDto, UpdateProductDto } from './product.dto'
 import { ProductService } from './product.service'
+import { Cache, CACHE_MANAGER, CacheInterceptor } from '@nestjs/cache-manager'
+
+export const RECOMMENDATION_CACHE_KEY = 'recommendations'
+export const RECOMMENDATION_CACHE_TTL = 600000
 
 @Controller('products')
+@UseInterceptors(CacheInterceptor)
 export class ProductController {
-	constructor(private readonly productService: ProductService) {}
+	constructor(
+		private readonly productService: ProductService,
+		@Inject(CACHE_MANAGER) private cacheManager: Cache,
+	) {}
 
 	@Post()
 	@Roles(Role.ADMIN)
@@ -62,7 +71,18 @@ export class ProductController {
 	@Get('my-recommendations')
 	@Auth()
 	async getMyRecommendedProducts(@CurrentUser('id') userId: string) {
-		return this.productService.getRecommendedProductsByUser(userId)
+		const cacheKey = `${RECOMMENDATION_CACHE_KEY}:${userId}`
+
+		const cachedRecommendations = await this.cacheManager.get(cacheKey)
+		if (cachedRecommendations) {
+			return cachedRecommendations
+		}
+
+		const recommendations = await this.productService.getRecommendedProductsByUser(userId)
+
+		await this.cacheManager.set(cacheKey, recommendations, RECOMMENDATION_CACHE_TTL)
+
+		return recommendations
 	}
 
 	@Get('by-ids')
