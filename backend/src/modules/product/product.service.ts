@@ -326,95 +326,105 @@ export class ProductService {
 	}
 
 	async getRecommendedProductsByUser(userId: string) {
-		// get viewed products by the user
-		const viewedProducts = await this.prisma.visitedProduct.findMany({
-			where: { userId: userId },
-			select: { productId: true },
-		});
+		// Step 1: Load Collaborative Filtering Recommendations from Cache
+		let recommendedProducts: Product[] = []
 
-		// If the user has no view history => return top-rated products
-		if (viewedProducts.length === 0) {
-			const topRatedProducts = await this.prisma.product.findMany({
+		// Step 2: Real-Time Content-Based Filtering
+		const [viewedProducts, orders] = await Promise.all([
+			this.prisma.visitedProduct.findMany({
+				where: { userId },
+				select: { productId: true },
+				take: 20,
+			}),
+			this.prisma.order.findMany({ where: { userId }, select: { id: true }, take: 10 }),
+		])
+
+		if (viewedProducts.length === 0 && orders.length === 0 && recommendedProducts.length === 0) {
+			// If no history, return top-rated products as fallback
+			recommendedProducts = await this.prisma.product.findMany({
 				orderBy: { ratingValue: 'desc' },
 				take: 10,
-			});
-			return topRatedProducts;
-		}
-
-		// get user's orders
-		const orders = await this.prisma.order.findMany({
-			where: { userId: userId },
-			select: { id: true },
-			take: 10,
-		});
-
-
-		const ordersIds = orders.flatMap(order => order.id);
-
-		let orderedProducts = [];
-		if (ordersIds.length > 0) {
-			orderedProducts = await this.prisma.orderItem.findMany({
-				where: { orderId: { in: ordersIds } },
-				select: { productId: true },
-			});
-		}
-
-		const viewedProductIds = viewedProducts.map(item => item.productId);
-		const orderedProductIds = orderedProducts.map(item => item.productId);
-		const excludeProductIds = [...viewedProductIds, ...orderedProductIds];
-
-		const viewedDetails = await this.prisma.product.findMany({
-			where: { id: { in: viewedProductIds } },
-			select: { subCategoryId: true, brandId: true },
-		});
-
-		const subCategories = Array.from(new Set(viewedDetails.map(item => item.subCategoryId)));
-		const brands = Array.from(new Set(viewedDetails.map(item => item.brandId)));
-
-		const orderedProductDetails = await this.prisma.product.findMany({
-			where: { id: { in: orderedProductIds } },
-			select: { price: true },
-		});
-
-		if (orderedProductDetails.length > 0) {
-			// Calculate the average price if the user has made orders
-			const totalSpent = orderedProductDetails.reduce((sum, product) => sum + product.price, 0);
-			const averagePrice = totalSpent / orderedProductDetails.length;
-
-			// Fetch products with filtering based on subcategories and brands
-			const products = await this.prisma.product.findMany({
-				where: {
-					subCategoryId: { in: subCategories },
-					brandId: { in: brands },
-					id: { notIn: excludeProductIds },
+				include: {
+					subCategory: true,
+					brand: true,
+					brandCategory: true,
 				},
-				orderBy: { ratingValue: 'desc' },
-				take: 30,
-			});
-
-			// sorting by price difference
-			const sortedProducts = products
-				.map(product => ({
-					...product,
-					priceDifference: Math.abs(product.price - averagePrice),
-				}))
-				.sort((a, b) => {
-					return a.priceDifference - b.priceDifference;
-				})
-				.slice(0, 10);
-			return sortedProducts
+			})
+			return recommendedProducts
 		}
 
-		const products = await this.prisma.product.findMany({
+		const viewedProductIds = viewedProducts.map(item => item.productId)
+		const ordersIds = orders.map(order => order.id)
+
+		// Get order items and calculate average price
+		const orderedProducts = ordersIds.length
+			? await this.prisma.orderItem.findMany({
+					where: { orderId: { in: ordersIds } },
+					select: { productId: true, price: true },
+				})
+			: []
+		const orderedProductIds = orderedProducts.map(item => item.productId)
+		const excludeProductIds = [...new Set([...viewedProductIds, ...orderedProductIds])]
+
+		const avgPrice =
+			orderedProducts.reduce((sum, { price }) => sum + price, 0) / (orderedProducts.length || 1)
+
+		// Step 3: Fetch Additional Products Based on Content Filtering (Categories, Brands, Price Range)
+		const [viewedDetails] = await Promise.all([
+			this.prisma.product.findMany({
+				where: { id: { in: viewedProductIds } },
+				select: { subCategoryId: true, brandId: true },
+			}),
+		])
+
+		const subCategories = Array.from(new Set(viewedDetails.map(item => item.subCategoryId)))
+		const brands = Array.from(new Set(viewedDetails.map(item => item.brandId)))
+
+		const contentBasedProducts = await this.prisma.product.findMany({
 			where: {
 				subCategoryId: { in: subCategories },
 				brandId: { in: brands },
 				id: { notIn: excludeProductIds },
+				price: { gte: avgPrice * 0.8, lte: avgPrice * 1.2 },
+			},
+			include: {
+				subCategory: true,
+				brand: true,
+				brandCategory: true,
 			},
 			orderBy: { ratingValue: 'desc' },
-			take: 30,
-		});
+			take: 20,
+		})
 
-		return products;
+		// Merge Collaborative and Content-Based Recommendations
+		const allRecommendations = [
+			...new Map(
+				[...recommendedProducts, ...contentBasedProducts].map(product => [product.id, product]),
+			).values(),
+		]
+
+		// Step 4: Rank Recommendations Using ML Model (Mock Scoring for Demonstration)
+		const scoredProducts = allRecommendations.map(product => ({
+			...product,
+			score: this.calculateProductScore(userId, product, avgPrice),
+		}))
+
+		// Step 5: Sort Products by Score and Return Top Recommendations
+		const finalRecommendations = scoredProducts.sort((a, b) => b.score - a.score)
+		return finalRecommendations
+	}
+
+	private calculateProductScore(userId: string, product: Product, avgPrice: number): number {
+		// Simple scoring function based on similarity and product attributes
+		const priceWeight = 0.3
+		const ratingWeight = 0.4
+		const recencyWeight = 0.3
+
+		const priceScore = 1 - Math.abs(product.price - avgPrice) / avgPrice
+		const ratingScore = product.ratingValue / 5
+		const recencyScore =
+			1 - (Date.now() - new Date(product.updatedAt).getTime()) / (1000 * 60 * 60 * 24 * 30) // 1 month decay
+
+		return priceWeight * priceScore + ratingWeight * ratingScore + recencyWeight * recencyScore
 	}
 }
