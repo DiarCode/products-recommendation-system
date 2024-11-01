@@ -5,8 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0ce2423b-f454-4058-bd29-b8c25cb2563b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/data/meraki_products_v2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/backend/data/meraki_products_v2.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/scripts/fill-products.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/scripts/fill-products.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/modules/product/product.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/modules/product/product.controller.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -50,7 +52,7 @@
   "keyToString": {
     "Docker.backend/Dockerfile.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "recEng",
+    "git-widget-placeholder": "script",
     "last_opened_file_path": "C:/Users/PK/Desktop/products-recommendation-system",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.standard": "true",
@@ -68,6 +70,11 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\PK\Desktop\products-recommendation-system\backend\scripts" />
+    </key>
+  </component>
   <component name="RunManager" selected="npm.migrate:up">
     <configuration default="true" type="docker-deploy" factoryName="dockerfile" temporary="true">
       <deployment type="dockerfile">
@@ -158,6 +165,7 @@
       <workItem from="1730316460544" duration="746000" />
       <workItem from="1730371852623" duration="1530000" />
       <workItem from="1730391351387" duration="6736000" />
+      <workItem from="1730461188851" duration="4881000" />
     </task>
     <servers />
   </component>
