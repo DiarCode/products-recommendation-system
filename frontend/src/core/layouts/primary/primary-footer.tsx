@@ -89,10 +89,10 @@ const Trademark = () => {
 		<div className='mb-6 hidden md:mb-0 md:block'>
 			<span className='flex flex-col'>
 				<h2 className='whitespace-nowrap text-sm font-semibold uppercase'>
-					GGNet
+					Tekno
 				</h2>
 				<span className='mt-2 text-sm text-neutral-500 dark:text-neutral-400'>
-					© {new Date().getFullYear()} GGNet . Все права защищены.
+					© {new Date().getFullYear()} Tekno . Все права защищены.
 				</span>
 			</span>
 		</div>

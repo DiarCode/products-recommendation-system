@@ -31,7 +31,7 @@ export function PrimaryMobileNav() {
 						href='/'
 						className='text-2xl font-bold'
 					>
-						GGNet
+						Tekno
 					</Link>
 					<Link
 						href='/'

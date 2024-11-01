@@ -48,7 +48,7 @@ export const AdminSidebar = () => {
 						href='/'
 						className='text-xl font-medium'
 					>
-						GGNet
+						Tekno
 					</Link>
 				)}
 
