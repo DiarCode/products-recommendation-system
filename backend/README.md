@@ -1,4 +1,4 @@
-# GGNet Market Backend
+# Tekno Market Backend
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 

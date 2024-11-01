@@ -6,6 +6,7 @@ import { CartView } from '@/modules/cart/components/cart-view'
 import { QueryProductsList } from '@/modules/products/components/query-products-list'
 import { PRODUCTS_QUERY_KEY } from '@/modules/products/hooks/use-products'
 import { productsService } from '@/modules/products/services/products.service'
+import { RecommendationsList } from '@/modules/recommendations/components/recommendations-list'
 
 export const metadata: Metadata = {
 	title: 'Корзина'
@@ -23,9 +24,13 @@ export default async function CartPage() {
 		<HydrationBoundary state={dehydrate(queryClient)}>
 			<CartView />
 
+			<div className='mt-12'>
+				<RecommendationsList />
+			</div>
+
 			<QueryProductsList
-				className='mt-12'
-				label='Рекомендуем'
+				className='mt-6'
+				label='Популярное сейчас'
 			/>
 		</HydrationBoundary>
 	)

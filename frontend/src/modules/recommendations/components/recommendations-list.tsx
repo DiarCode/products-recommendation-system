@@ -13,7 +13,7 @@ export const RecommendationsList = () => {
 
 	return (
 		<Suspense>
-			{recommendations && currentUser && (
+			{currentUser && recommendations && recommendations.length > 0 && (
 				<div>
 					<h3 className='mb-6 text-lg font-medium'>Вам может понравиться</h3>
 					<ProductsList products={recommendations} />

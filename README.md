@@ -1,6 +1,6 @@
 # E-Commerce Recommendation System
 
-GGNet - A comprehensive platform for trading and managing technical goods. Streamline your marketplace operations with advanced features for product listings, inventory management, and secure transactions.
+Tekno - A comprehensive platform for trading and managing technical goods. Streamline your marketplace operations with advanced features for product listings, inventory management, and secure transactions.
 
 ## Project Structure
 
