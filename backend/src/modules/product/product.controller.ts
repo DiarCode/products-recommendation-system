@@ -71,16 +71,16 @@ export class ProductController {
 	@Get('my-recommendations')
 	@Auth()
 	async getMyRecommendedProducts(@CurrentUser('id') userId: string) {
-		const cacheKey = `${RECOMMENDATION_CACHE_KEY}:${userId}`
+		/*const cacheKey = `${RECOMMENDATION_CACHE_KEY}:${userId}`
 
 		const cachedRecommendations = await this.cacheManager.get(cacheKey)
 		if (cachedRecommendations) {
 			return cachedRecommendations
-		}
+		}*/
 
 		const recommendations = await this.productService.getRecommendedProductsByUser(userId)
 
-		await this.cacheManager.set(cacheKey, recommendations, RECOMMENDATION_CACHE_TTL)
+		//await this.cacheManager.set(cacheKey, recommendations, RECOMMENDATION_CACHE_TTL)
 
 		return recommendations
 	}

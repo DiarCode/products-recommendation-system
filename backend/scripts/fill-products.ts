@@ -6,12 +6,12 @@ import { nanoid } from 'nanoid'
 import { ImagesService, PRODUCT_IMAGES_DIR } from '../src/modules/images/images.service'
 import { LoggerService } from '../src/modules/logger/logger.service'
 
-// Command to run script:
-// npx ts-node ./scripts/fill-products.ts
-
 const prisma = new PrismaClient()
 const loggerService = new LoggerService()
 const imagesService = new ImagesService(loggerService)
+
+// Command to run script:
+// npx ts-node ./scripts/fill-products.ts
 
 interface ProductCSV {
 	title: string
@@ -28,10 +28,9 @@ interface ProductCSV {
 const readCSV = async (filePath: string): Promise<ProductCSV[]> => {
 	const results: ProductCSV[] = []
 
-	const stream = fs.createReadStream(filePath).pipe(csv())
-
 	return new Promise((resolve, reject) => {
-		stream
+		fs.createReadStream(filePath)
+			.pipe(csv())
 			.on('data', data => results.push(data))
 			.on('end', () => resolve(results))
 			.on('error', reject)
@@ -62,7 +61,7 @@ const findOrCreateCategoryAndSubCategory = async (
 	return subCategory.id
 }
 
-const findOrCreateBrand = async (brandName: string, brandCategoryName: string) => {
+const findOrCreateBrandAndCategory = async (brandName: string, brandCategoryName: string) => {
 	const brand = await prisma.brand.upsert({
 		where: { name: brandName.trim() },
 		update: {},
@@ -85,10 +84,7 @@ const findOrCreateBrand = async (brandName: string, brandCategoryName: string) =
 
 const saveImageByUrl = async (url: string): Promise<string | null> => {
 	try {
-		const response = await axios.default.get(url, {
-			responseType: 'arraybuffer',
-		})
-
+		const response = await axios.default.get(url, { responseType: 'arraybuffer' })
 		const imageBuffer = Buffer.from(response.data)
 
 		const file: Express.Multer.File = {
@@ -97,8 +93,7 @@ const saveImageByUrl = async (url: string): Promise<string | null> => {
 			mimetype: response.headers['content-type'],
 		} as Express.Multer.File
 
-		const imageFilename = await imagesService.saveImage(file, PRODUCT_IMAGES_DIR)
-		return imageFilename
+		return await imagesService.saveImage(file, PRODUCT_IMAGES_DIR)
 	} catch (error) {
 		loggerService.error(`Failed to save image from URL: ${url}. Error: ${error.message}`)
 		return null
@@ -108,54 +103,35 @@ const saveImageByUrl = async (url: string): Promise<string | null> => {
 const getSavedFilenamesByUrls = async (imageUrls: string): Promise<string[]> => {
 	const urls = imageUrls.split(';')
 	const filenames = await Promise.all(
-		urls.map(async url => {
-			const trimmedUrl = url.trim()
-			if (trimmedUrl) {
-				return await saveImageByUrl(trimmedUrl)
-			}
-			return null
-		}),
+		urls.map(async url => (url.trim() ? await saveImageByUrl(url.trim()) : null)),
 	)
-
 	return filenames.filter(Boolean) as string[]
 }
 
 const parseSpecifications = (specifications: string): Record<string, string> => {
 	const characteristics: Record<string, string> = {}
-	const entries = specifications.split(';')
-
-	for (const entry of entries) {
+	specifications.split(';').forEach(entry => {
 		const [key, value] = entry.split(':').map(part => part.trim())
-		if (key && value) {
-			characteristics[key] = value
-		}
-	}
-
+		if (key && value) characteristics[key] = value
+	})
 	return characteristics
 }
 
-const generateSKU = async (): Promise<string> => {
-	let sku: string
+const generateUniqueField = async (
+	field: 'articul' | 'barcode',
+	length: number,
+): Promise<string> => {
+	let value: string
 	do {
-		sku = `${nanoid(10).toUpperCase()}`
-	} while (await prisma.product.findFirst({ where: { articul: sku } }))
-
-	return sku
-}
-
-const generateBarcode = async (): Promise<string> => {
-	let barcode: string
-	do {
-		barcode = nanoid(12)
-	} while (await prisma.product.findFirst({ where: { barcode } }))
-
-	return barcode
+		value = nanoid(length)
+	} while (await prisma.product.findFirst({ where: { [field]: value } }))
+	return value
 }
 
 const insertProducts = async (csvFilePath: string) => {
 	const csvProducts = await readCSV(csvFilePath)
 	const failedProducts: string[] = []
-	const batchSize = 100
+	const batchSize = 50
 	const productPromises: Promise<void>[] = []
 
 	for (const csvProduct of csvProducts) {
@@ -165,16 +141,16 @@ const insertProducts = async (csvFilePath: string) => {
 					csvProduct.category,
 					csvProduct.subCategory,
 				)
-				const { brandId, brandCategoryId } = await findOrCreateBrand(
+				const { brandId, brandCategoryId } = await findOrCreateBrandAndCategory(
 					csvProduct.brand,
-					csvProduct.subCategory,
+					csvProduct.brandCategory,
 				)
 
-				const characteristics: Record<string, string> = csvProduct.specification
+				const characteristics = csvProduct.specification
 					? parseSpecifications(csvProduct.specification)
 					: {}
-				const articul = await generateSKU()
-				const barcode = await generateBarcode()
+				const articul = await generateUniqueField('articul', 10)
+				const barcode = await generateUniqueField('barcode', 12)
 				const stock = 1000
 
 				const imageFilenames = await getSavedFilenamesByUrls(csvProduct.image)
@@ -209,9 +185,7 @@ const insertProducts = async (csvFilePath: string) => {
 		}
 	}
 
-	if (productPromises.length > 0) {
-		await Promise.all(productPromises)
-	}
+	if (productPromises.length > 0) await Promise.all(productPromises)
 
 	if (failedProducts.length > 0) {
 		loggerService.warn(

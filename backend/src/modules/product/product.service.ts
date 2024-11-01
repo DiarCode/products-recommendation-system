@@ -18,6 +18,8 @@ import { LoggerService } from '../logger/logger.service'
 import { SubCategoryService } from '../sub-category/sub-category.service'
 import { CreateProductDto, UpdateProductDto } from './product.dto'
 
+const RECOMMENDED_PRODUCTS_NUMBER = 15
+
 @Injectable()
 export class ProductService {
 	constructor(
@@ -341,16 +343,7 @@ export class ProductService {
 
 		if (viewedProducts.length === 0 && orders.length === 0 && recommendedProducts.length === 0) {
 			// If no history, return top-rated products as fallback
-			recommendedProducts = await this.prisma.product.findMany({
-				orderBy: { ratingValue: 'desc' },
-				take: 15,
-				include: {
-					subCategory: true,
-					brand: true,
-					brandCategory: true,
-				},
-			})
-			return recommendedProducts
+			return await this.getTopRatedProducts(15)
 		}
 
 		const viewedProductIds = viewedProducts.map(item => item.productId)
@@ -397,11 +390,20 @@ export class ProductService {
 		})
 
 		// Merge Collaborative and Content-Based Recommendations
-		const allRecommendations = [
+		let allRecommendations = [
 			...new Map(
-				[...recommendedProducts, ...contentBasedProducts].map(product => [product.id, product]),
+				[...recommendedProducts, ...contentBasedProducts].map(product => [product.id, product])
 			).values(),
-		]
+		];
+
+		// Check if the total number of recommendations is less than 15
+		const requiredCount = RECOMMENDED_PRODUCTS_NUMBER;
+		const currentCount = allRecommendations.length;
+
+		if (currentCount < requiredCount) {
+			const additionalProducts = await this.getTopRatedProducts(requiredCount - currentCount);
+			allRecommendations = [...allRecommendations, ...additionalProducts];
+		}
 
 		// Step 4: Rank Recommendations Using ML Model (Mock Scoring and Cosine Similarity for Demonstration)
 		const scoredProducts = await Promise.all(
@@ -478,5 +480,18 @@ export class ProductService {
 			1 - (Date.now() - new Date(product.updatedAt).getTime()) / (1000 * 60 * 60 * 24 * 30) // 1 month decay
 
 		return priceWeight * priceScore + ratingWeight * ratingScore + recencyWeight * recencyScore
+	}
+
+	private async getTopRatedProducts(numberOfProducts: number) {
+		let recommendedProducts = await this.prisma.product.findMany({
+			orderBy: {ratingValue: 'desc'},
+			take: numberOfProducts,
+			include: {
+				subCategory: true,
+				brand: true,
+				brandCategory: true,
+			},
+		})
+		return recommendedProducts
 	}
 }
