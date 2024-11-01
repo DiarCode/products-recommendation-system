@@ -27,7 +27,7 @@ export function PrimaryMainNav() {
 				className='flex items-center'
 			>
 				<span className='hidden text-xl font-medium sm:inline-block'>
-					GGNet
+					Tekno
 				</span>
 			</Link>
 			<PrimaryNavMenu />

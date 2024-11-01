@@ -46,7 +46,7 @@ export const PrimarySearchBar = () => {
 				<input
 					type='text'
 					className='w-full rounded-xl border border-primary bg-background px-4 py-2 focus:border-primary'
-					placeholder='Найти на GGNet'
+					placeholder='Найти на Tekno'
 					value={searchValue}
 					onChange={e => onChangeSearchValue(e.target.value)}
 				/>

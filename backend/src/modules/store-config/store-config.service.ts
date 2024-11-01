@@ -18,8 +18,8 @@ export class StoreConfigService {
 
 		if (!config) {
 			config = await this.createStoreConfig({
-				storeName: 'GGNet',
-				storeDescription: 'GGNet — ваш надёжный поставщик технического оборудования',
+				storeName: 'Tekno',
+				storeDescription: 'Tekno — ваш надёжный поставщик технического оборудования',
 				storeKeywords: 'техническое оборудование, роутеры, модемы, сети, интернет-устройства',
 				landingImages: [],
 			})
