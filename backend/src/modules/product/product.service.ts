@@ -18,8 +18,6 @@ import { LoggerService } from '../logger/logger.service'
 import { SubCategoryService } from '../sub-category/sub-category.service'
 import { CreateProductDto, UpdateProductDto } from './product.dto'
 
-const RECOMMENDED_PRODUCTS_NUMBER = 15
-
 @Injectable()
 export class ProductService {
 	constructor(
@@ -327,171 +325,195 @@ export class ProductService {
 		})
 	}
 
-	async getRecommendedProductsByUser(userId: string) {
-		// Step 1: Load Collaborative Filtering Recommendations from Cache
-		let recommendedProducts: Product[] = []
-
-		// Step 2: Real-Time Content-Based Filtering
-		const [viewedProducts, orders] = await Promise.all([
+	async getAdvancedRecommendedProducts(userId: string): Promise<Product[]> {
+		// Fetch recent history: viewed products, ordered items, and recent search terms
+		const [viewedProducts, orders, searchTerms] = await Promise.all([
 			this.prisma.visitedProduct.findMany({
 				where: { userId },
-				select: { productId: true },
-				take: 20,
+				select: { productId: true, createdAt: true },
+				orderBy: { createdAt: 'desc' },
 			}),
-			this.prisma.order.findMany({ where: { userId }, select: { id: true }, take: 10 }),
+			this.prisma.order.findMany({
+				where: { userId },
+				select: { id: true },
+			}),
+			this.prisma.searchTerm.findMany({
+				where: { userId },
+				select: { term: true },
+				orderBy: { createdAt: 'desc' },
+			}),
 		])
 
-		if (viewedProducts.length === 0 && orders.length === 0 && recommendedProducts.length === 0) {
-			// If no history, return top-rated products as fallback
-			return await this.getTopRatedProducts(15)
+		// Early exit if no history
+		if (!viewedProducts.length && !orders.length) {
+			return []
 		}
 
+		// Extract product IDs from viewed and ordered items
 		const viewedProductIds = viewedProducts.map(item => item.productId)
 		const ordersIds = orders.map(order => order.id)
 
-		// Get order items and calculate average price
 		const orderedProducts = ordersIds.length
 			? await this.prisma.orderItem.findMany({
 					where: { orderId: { in: ordersIds } },
 					select: { productId: true, price: true },
 				})
 			: []
+
 		const orderedProductIds = orderedProducts.map(item => item.productId)
 		const excludeProductIds = [...new Set([...viewedProductIds, ...orderedProductIds])]
 
+		// Compute average price of ordered products for filtering
 		const avgPrice =
 			orderedProducts.reduce((sum, { price }) => sum + price, 0) / (orderedProducts.length || 1)
 
-		// Step 3: Fetch Additional Products Based on Content Filtering (Categories, Brands, Price Range)
-		const [viewedDetails] = await Promise.all([
-			this.prisma.product.findMany({
-				where: { id: { in: viewedProductIds } },
-				select: { subCategoryId: true, brandId: true },
-			}),
-		])
+		// Content-based filtering based on viewed products' attributes
+		const viewedProductDetails = await this.prisma.product.findMany({
+			where: { id: { in: viewedProductIds } },
+			include: { subCategory: true, brand: true, brandCategory: true },
+		})
 
-		const subCategories = Array.from(new Set(viewedDetails.map(item => item.subCategoryId)))
-		const brands = Array.from(new Set(viewedDetails.map(item => item.brandId)))
+		const subCategories = Array.from(new Set(viewedProductDetails.map(item => item.subCategoryId)))
+		const brands = Array.from(new Set(viewedProductDetails.map(item => item.brandId)))
 
-		const contentBasedProducts = await this.prisma.product.findMany({
+		// Fetch content-based products that match user’s preferences
+		const primaryProducts = await this.prisma.product.findMany({
 			where: {
 				subCategoryId: { in: subCategories },
 				brandId: { in: brands },
 				id: { notIn: excludeProductIds },
 				price: { gte: avgPrice * 0.7, lte: avgPrice * 1.3 },
 			},
-			include: {
-				subCategory: true,
-				brand: true,
-				brandCategory: true,
-			},
+			include: { subCategory: true, brand: true, brandCategory: true },
 			orderBy: { ratingValue: 'desc' },
-			take: 20,
+			take: 50,
 		})
 
-		// Merge Collaborative and Content-Based Recommendations
-		let allRecommendations = [
+		// Enhance recommendations with products matching recent search terms
+		const searchBasedProducts = await this.prisma.product.findMany({
+			where: {
+				OR: searchTerms.map(({ term }) => ({ name: { contains: term, mode: 'insensitive' } })),
+				id: { notIn: excludeProductIds },
+			},
+			include: { subCategory: true, brand: true, brandCategory: true },
+			take: 10,
+		})
+
+		// Consolidate product list and remove duplicates
+		const uniqueProducts = [
 			...new Map(
-				[...recommendedProducts, ...contentBasedProducts].map(product => [product.id, product])
+				[...primaryProducts, ...searchBasedProducts].map(product => [product.id, product]),
 			).values(),
-		];
+		]
 
-		// Check if the total number of recommendations is less than 15
-		const requiredCount = RECOMMENDED_PRODUCTS_NUMBER;
-		const currentCount = allRecommendations.length;
+		// Calculate the final score for each product
+		let scoredProducts = await Promise.all(
+			uniqueProducts.map(async product => ({
+				...product,
+				score: this.calculateProductFinalScore(product, viewedProducts, avgPrice),
+			})),
+		)
 
-		if (currentCount < requiredCount) {
-			const additionalProducts = await this.getTopRatedProducts(requiredCount - currentCount);
-			allRecommendations = [...allRecommendations, ...additionalProducts];
+		// Sort by score
+		scoredProducts = scoredProducts.sort((a, b) => b.score - a.score)
+
+		// If fewer than 15 products, fetch additional similar products to fill the list
+		if (scoredProducts.length < 15) {
+			const additionalProducts = await this.prisma.product.findMany({
+				where: {
+					subCategoryId: { in: subCategories },
+					OR: [
+						{ brandId: { in: brands } },
+						{ price: { gte: avgPrice * 0.7, lte: avgPrice * 1.3 } },
+					],
+					id: { notIn: excludeProductIds.concat(scoredProducts.map(p => p.id)) },
+				},
+				include: { subCategory: true, brand: true, brandCategory: true },
+				orderBy: { ratingValue: 'desc' },
+				take: 15 - scoredProducts.length,
+			})
+
+			// Score additional products and add to the list
+			const scoredAdditionalProducts = await Promise.all(
+				additionalProducts.map(async product => ({
+					...product,
+					score: this.calculateProductFinalScore(product, viewedProducts, avgPrice),
+				})),
+			)
+
+			scoredProducts = scoredProducts
+				.concat(scoredAdditionalProducts)
+				.sort((a, b) => b.score - a.score)
 		}
 
-		// Step 4: Rank Recommendations Using ML Model (Mock Scoring and Cosine Similarity for Demonstration)
-		const scoredProducts = await Promise.all(
-			allRecommendations.map(async (product) => ({
-				...product,
-				score: await this.calculateProductScoreWithSimilarity(product, avgPrice, viewedProductIds),
-			}))
-		);
-
-		// Step 5: Sort Products by Score and Return Top Recommendations
-		const finalRecommendations = scoredProducts.sort((a, b) => b.score - a.score).slice(0, 15);
-
-		return finalRecommendations;
+		// Return exactly 15 recommendations
+		return scoredProducts.slice(0, 15)
 	}
 
-	private calculateCosineSimilarity(productA: Product, productB: Product): number {
+	private calculateCosineSimilarity(
+		productA: Product,
+		productB: { price: number; ratingValue: number; ratingCount: number },
+	): number {
 		const featureVectorA = [
 			productA.price || 0,
 			productA.ratingValue || 0,
-			productA.ratingCount || 0
-		];
+			productA.ratingCount || 0,
+		]
 
 		const featureVectorB = [
 			productB.price || 0,
 			productB.ratingValue || 0,
-			productB.ratingCount || 0
-		];
+			productB.ratingCount || 0,
+		]
 
-		const dotProduct = featureVectorA.reduce((sum, a, index) => sum + a * featureVectorB[index], 0);
+		const dotProduct = featureVectorA.reduce((sum, a, index) => sum + a * featureVectorB[index], 0)
 
-		const magnitudeA = Math.sqrt(featureVectorA.reduce((sum, a) => sum + a * a, 0));
-		const magnitudeB = Math.sqrt(featureVectorB.reduce((sum, b) => sum + b * b, 0));
+		const magnitudeA = Math.hypot(...featureVectorA)
+		const magnitudeB = Math.hypot(...featureVectorB)
 
-		const cosineSimilarity = dotProduct / (magnitudeA * magnitudeB);
-
-		return cosineSimilarity;
+		return magnitudeA && magnitudeB ? dotProduct / (magnitudeA * magnitudeB) : 0
 	}
 
-
-	// Calculate score with similarity weighting for products
-	private async calculateProductScoreWithSimilarity(
+	// Final score calculation method incorporating cosine similarity and relevance factors
+	private calculateProductFinalScore(
 		product: Product,
+		viewedProducts: { productId: string; createdAt: Date }[],
 		avgPrice: number,
-		viewedProductIds: string[]
-	): Promise<number> {
-		const baseScore = this.calculateProductScore(product, avgPrice);
-		const similarityWeight = 0.5;
+	): number {
+		// Set scoring weights
+		const priceWeight = 0.25
+		const ratingWeight = 0.25
+		const recencyWeight = 0.25
+		const similarityWeight = 0.25
 
-		// Fetch viewed products asynchronously and calculate similarity scores
-		const similarities = await Promise.all(
-			viewedProductIds.map(async (viewedProductId) => {
-				const viewedProduct = await this.prisma.product.findUnique({ where: { id: viewedProductId } });
-				if (viewedProduct) {
-					return this.calculateCosineSimilarity(product, viewedProduct);
-				}
-				return 0;
-			})
-		);
-
-		const maxSimilarity = Math.max(...similarities);
-
-		return baseScore + similarityWeight * maxSimilarity;
-	}
-
-	private calculateProductScore(product: Product, avgPrice: number): number {
-		// Simple scoring function based on similarity and product attributes
-		const priceWeight = 0.3
-		const ratingWeight = 0.4
-		const recencyWeight = 0.3
-
+		// Calculate price similarity
 		const priceScore = 1 - Math.abs(product.price - avgPrice) / avgPrice
+
+		// Calculate recency score based on most recent view date
+		const mostRecentView = viewedProducts.find(vp => vp.productId === product.id)?.createdAt
+		const recencyScore = mostRecentView
+			? Math.max(
+					0,
+					1 - (Date.now() - new Date(mostRecentView).getTime()) / (1000 * 60 * 60 * 24 * 30),
+				) // 1-month decay
+			: 0
+
+		// Calculate cosine similarity to the most relevant viewed product
+		const maxSimilarity = viewedProducts.reduce(maxSim => {
+			const viewedProd = { price: avgPrice, ratingValue: 5, ratingCount: 10 } // Approximate representative viewed product
+			const similarity = this.calculateCosineSimilarity(product, viewedProd)
+			return Math.max(maxSim, similarity)
+		}, 0)
+
+		// Calculate rating score as normalized rating value
 		const ratingScore = product.ratingValue / 5
-		const recencyScore =
-			1 - (Date.now() - new Date(product.updatedAt).getTime()) / (1000 * 60 * 60 * 24 * 30) // 1 month decay
 
-		return priceWeight * priceScore + ratingWeight * ratingScore + recencyWeight * recencyScore
-	}
-
-	private async getTopRatedProducts(numberOfProducts: number) {
-		let recommendedProducts = await this.prisma.product.findMany({
-			orderBy: {ratingValue: 'desc'},
-			take: numberOfProducts,
-			include: {
-				subCategory: true,
-				brand: true,
-				brandCategory: true,
-			},
-		})
-		return recommendedProducts
+		// Final score aggregation
+		return (
+			priceWeight * priceScore +
+			ratingWeight * ratingScore +
+			recencyWeight * recencyScore +
+			similarityWeight * maxSimilarity
+		)
 	}
 }

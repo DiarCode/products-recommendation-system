@@ -78,7 +78,7 @@ export class ProductController {
 			return cachedRecommendations
 		}*/
 
-		const recommendations = await this.productService.getRecommendedProductsByUser(userId)
+		const recommendations = await this.productService.getAdvancedRecommendedProducts(userId)
 
 		//await this.cacheManager.set(cacheKey, recommendations, RECOMMENDATION_CACHE_TTL)
 
