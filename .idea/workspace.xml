@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0ce2423b-f454-4058-bd29-b8c25cb2563b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/src/modules/product/reommendation-engine/recommendations.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/modules/product/product.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/modules/product/product.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" afterDir="false" />
-    </list>
+    <list default="true" id="0ce2423b-f454-4058-bd29-b8c25cb2563b" name="Changes" comment="Merge remote-tracking branch 'origin/recEng2' into recEng2&#10;&#10;# Conflicts:&#10;#&#9;backend/src/modules/product/reommendation-engine/recommendations.ts" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -177,8 +172,17 @@
       <workItem from="1730461188851" duration="4881000" />
       <workItem from="1730473462815" duration="1892000" />
       <workItem from="1730541776890" duration="5774000" />
-      <workItem from="1730554270449" duration="12340000" />
+      <workItem from="1730554270449" duration="12680000" />
     </task>
+    <task id="LOCAL-00001" summary="recommendation engine improvement&#10;&#10;search term and subcategory similarity comparing&#10;created a separate file inside folder modules/products/recommendation-engine for recommendation system">
+      <option name="closed" value="true" />
+      <created>1730577070276</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1730577070276</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -194,5 +198,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="recommendation engine improvement&#10;&#10;search term and subcategory similarity comparing&#10;created a separate file inside folder modules/products/recommendation-engine for recommendation system" />
+    <MESSAGE value="Merge remote-tracking branch 'origin/recEng2' into recEng2&#10;&#10;# Conflicts:&#10;#&#9;backend/src/modules/product/reommendation-engine/recommendations.ts" />
+    <option name="LAST_COMMIT_MESSAGE" value="Merge remote-tracking branch 'origin/recEng2' into recEng2&#10;&#10;# Conflicts:&#10;#&#9;backend/src/modules/product/reommendation-engine/recommendations.ts" />
   </component>
 </project>
