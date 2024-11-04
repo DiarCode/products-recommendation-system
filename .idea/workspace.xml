@@ -4,17 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0ce2423b-f454-4058-bd29-b8c25cb2563b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/data/meraki_products_v2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/backend/data/meraki_products_v2.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/scripts/fill-products.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/scripts/fill-products.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/modules/product/product.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/modules/product/product.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/modules/product/product.service.ts" afterDir="false" />
-    </list>
+    <list default="true" id="0ce2423b-f454-4058-bd29-b8c25cb2563b" name="Changes" comment="Merge remote-tracking branch 'origin/recEng2' into recEng2&#10;&#10;# Conflicts:&#10;#&#9;backend/src/modules/product/reommendation-engine/recommendations.ts" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="TypeScript File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
@@ -40,6 +41,9 @@
   <component name="KubernetesApiProvider">{
   &quot;isMigrated&quot;: true
 }</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1
 }</component>
@@ -52,7 +56,7 @@
   "keyToString": {
     "Docker.backend/Dockerfile.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "script",
+    "git-widget-placeholder": "recEng2",
     "last_opened_file_path": "C:/Users/PK/Desktop/products-recommendation-system",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.standard": "true",
@@ -65,7 +69,7 @@
     "npm.dev.executor": "Run",
     "npm.migrate:up.executor": "Run",
     "npm.start.executor": "Run",
-    "settings.editor.selected.configurable": "settings.javascript.linters.eslint",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
     "ts.external.directory.path": "C:\\Users\\PK\\Desktop\\products-recommendation-system\\backend\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   }
@@ -133,8 +137,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="npm.start" />
         <item itemvalue="npm.migrate:up" />
+        <item itemvalue="npm.start" />
         <item itemvalue="npm.dev" />
         <item itemvalue="npm.build" />
         <item itemvalue="Docker.backend/Dockerfile" />
@@ -166,10 +170,38 @@
       <workItem from="1730371852623" duration="1530000" />
       <workItem from="1730391351387" duration="6736000" />
       <workItem from="1730461188851" duration="4881000" />
+      <workItem from="1730473462815" duration="1892000" />
+      <workItem from="1730541776890" duration="5774000" />
+      <workItem from="1730554270449" duration="12680000" />
     </task>
+    <task id="LOCAL-00001" summary="recommendation engine improvement&#10;&#10;search term and subcategory similarity comparing&#10;created a separate file inside folder modules/products/recommendation-engine for recommendation system">
+      <option name="closed" value="true" />
+      <created>1730577070276</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1730577070276</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="recommendation engine improvement&#10;&#10;search term and subcategory similarity comparing&#10;created a separate file inside folder modules/products/recommendation-engine for recommendation system" />
+    <MESSAGE value="Merge remote-tracking branch 'origin/recEng2' into recEng2&#10;&#10;# Conflicts:&#10;#&#9;backend/src/modules/product/reommendation-engine/recommendations.ts" />
+    <option name="LAST_COMMIT_MESSAGE" value="Merge remote-tracking branch 'origin/recEng2' into recEng2&#10;&#10;# Conflicts:&#10;#&#9;backend/src/modules/product/reommendation-engine/recommendations.ts" />
   </component>
 </project>
