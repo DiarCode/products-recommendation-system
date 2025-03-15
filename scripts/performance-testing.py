@@ -3,10 +3,11 @@ import asyncio
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 # Configuration
 endpoint_url = "http://localhost:8080/api/v1/products/my-recommendations"  # Replace with actual endpoint URL
-access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MjI0MTNiZWZhYTlkZmVhNDc4MmQ3YiIsImlhdCI6MTczMDM3NzAwNCwiZXhwIjoxNzMwOTgxODA0fQ.J3DRmhwYjoVh-lCxnqNcc6uZXhI3NEu3DXscfYfQhXE"
+access_token = os.environ.get('access_token')
 num_requests = 100
 concurrent_requests = 10
 

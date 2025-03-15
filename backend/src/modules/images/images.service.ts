@@ -25,35 +25,49 @@ export class ImagesService {
 	async saveImage(file: Express.Multer.File, basePath: string): Promise<string> {
 		try {
 			const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '')
-
+	
 			const hash = crypto
-				.createHash('md5')
-				.update(sanitizedFilename + Date.now())
+				.createHash('sha256') // Secure hashing
+				.update(sanitizedFilename + Date.now().toString())
 				.digest('hex')
 			const extension = path.extname(sanitizedFilename).toLowerCase()
-
+	
 			if (!IMAGES_EXTENSIONS.includes(extension)) {
 				throw new BadRequestException('Unsupported file type.')
 			}
-
+	
 			const filename = `${hash}${extension}`
 			await fs.mkdir(basePath, { recursive: true })
+	
+			// Ensure final path is within basePath
 			const filePath = path.join(basePath, filename)
-
-			await sharp(file.buffer).webp({ quality: 100 }).toFile(filePath)
-
+			const normalizedFilePath = path.normalize(filePath)
+			if (!normalizedFilePath.startsWith(basePath)) {
+				throw new BadRequestException('Invalid file path.')
+			}
+	
+			await sharp(file.buffer).webp({ quality: 100 }).toFile(normalizedFilePath)
+	
 			return filename
 		} catch (err) {
 			this.logger.error(`Error saving image: ${err.message}`, err.stack)
 			throw new Error(`Error saving image: ${err.message}`)
 		}
 	}
-
+	
 	async deleteImage(imageFilename: string, basePath: string): Promise<void> {
 		try {
-			const absoluteImagePath = path.resolve(basePath, imageFilename)
-			await fs.stat(absoluteImagePath)
-			await fs.unlink(absoluteImagePath)
+			const sanitizedFilename = imageFilename.replace(/[^a-zA-Z0-9.\-_]/g, '')
+	
+			const absoluteImagePath = path.resolve(basePath, sanitizedFilename)
+			const normalizedPath = path.normalize(absoluteImagePath)
+	
+			if (!normalizedPath.startsWith(basePath)) {
+				throw new BadRequestException('Invalid file path.')
+			}
+	
+			await fs.stat(normalizedPath)
+			await fs.unlink(normalizedPath)
 		} catch (err) {
 			if (err.code === 'ENOENT') {
 				this.logger.warn(`Image not found: ${imageFilename}`)
@@ -62,17 +76,24 @@ export class ImagesService {
 				throw new Error(`Error deleting image: ${err.message}`)
 			}
 		}
-	}
+	}	
 
 	getImageByFilename(filename: string, basePath: string, res: Response): StreamableFile {
 		const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.\-_]/g, '')
+	
 		const imagePath = path.join(basePath, sanitizedFilename)
-
-		if (!existsSync(imagePath)) {
-			this.logger.warn(`Image not found: ${imagePath}`)
+		const normalizedPath = path.normalize(imagePath)
+	
+		if (!normalizedPath.startsWith(basePath)) {
+			this.logger.warn(`Invalid file path: ${filename}`)
+			throw new NotFoundException('Invalid file path')
+		}
+	
+		if (!existsSync(normalizedPath)) {
+			this.logger.warn(`Image not found: ${normalizedPath}`)
 			throw new NotFoundException('Image not found')
 		}
-
+	
 		const extension = path.extname(sanitizedFilename).toLowerCase()
 		switch (extension) {
 			case '.jpg':
@@ -92,9 +113,10 @@ export class ImagesService {
 				this.logger.warn(`Unsupported image type: ${filename}`)
 				throw new NotFoundException('Unsupported image type')
 		}
-
-		const fileStream = createReadStream(imagePath)
-		this.logger.log(`Serving image: ${imagePath}`)
+	
+		const fileStream = createReadStream(normalizedPath)
+		this.logger.log(`Serving image: ${normalizedPath}`)
 		return new StreamableFile(fileStream)
 	}
+	
 }

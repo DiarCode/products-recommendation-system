@@ -35,8 +35,27 @@ export const isPageActive = (pageHref: string, pathname: string): boolean => {
 		return true
 	}
 
-	const dynamicRegex = pageHref.replace(/\[.*?\]/g, '([^/]+)')
-	const regex = new RegExp(`^${dynamicRegex}`)
+	// Validate pageHref length to prevent excessive regex complexity
+	if (pageHref.length > 100) {
+		return false // Reject overly long patterns
+	}
 
-	return regex.test(pathname)
+	// Escape special regex characters to prevent ReDoS
+	const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+	// Only allow [param] style dynamic segments and ensure no other regex special characters
+	if (!/^\[.*?\]$/.test(pageHref) && pageHref.includes('[')) {
+		return false
+	}
+
+	const sanitizedPageHref = escapeRegExp(pageHref)
+	const dynamicRegex = sanitizedPageHref.replace(/\[.*?\]/g, '([^/]+)')
+
+	try {
+		const regex = new RegExp(`^${dynamicRegex}$`) // Ensure strict match
+		return regex.test(pathname)
+	} catch (err) {
+		return false // Fail-safe: Avoid crashing the app if regex is invalid
+	}
 }
+

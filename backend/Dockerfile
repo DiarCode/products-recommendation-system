@@ -1,26 +1,28 @@
-# Stage 1: Build
 FROM node:21-alpine as builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --frozen-lockfile
 
 COPY . .
 
 RUN npm run build
 
-# Stage 2: Production
+# Create a non-root user and switch to it
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 FROM node:21-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/.env ./
+COPY --from=builder /app ./
 
+# Ensure non-root user exists and switch to it
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
-EXPOSE 8080
+EXPOSE 3000
 
-CMD ["node", "dist/main"]
+CMD ["npm", "run", "start"]
